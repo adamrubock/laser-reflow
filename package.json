@@ -2,7 +2,7 @@
   "name": "laser-reflow",
   "version": "1.0.0",
   "description": "This is the control stack for the Laser Reflow Tool project.",
-  "main": "index.js",
+  "main": "index.jsx",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
