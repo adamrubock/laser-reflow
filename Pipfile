@@ -12,6 +12,3 @@ djangorestframework = "*"
 pylint = "*"
 pylint-django = "*"
 pylint-plugin-utils = "*"
-
-[requires]
-python_version = "3.6"
