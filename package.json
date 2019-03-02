@@ -5,8 +5,8 @@
   "main": "index.jsx",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "webpack --mode development ./project/frontend/src/index.jsx --watch --output ./project/frontend/static/frontend/main.js",
-    "build": "webpack --mode production ./project/frontend/src/index.js --output ./project/frontend/static/frontend/main.js"
+    "dev": "webpack --mode development ./laserline/frontend/src/index.jsx --watch --output ./laserline/frontend/static/frontend/main.js",
+    "build": "webpack --mode production ./laserline/frontend/src/index.js --output ./laserline/frontend/static/frontend/main.js"
   },
   "repository": {
     "type": "git",
