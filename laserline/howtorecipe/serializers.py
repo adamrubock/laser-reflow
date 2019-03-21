@@ -33,6 +33,7 @@ class RecipeSerializer(serializers.ModelSerializer):
 		instance.recipe_name=validated_data.get('recipe_name')
 		instance.x_width=validated_data.get('x_width')
 		instance.y_width=validated_data.get('y_width')
+		instance.save()
 		TimePoint.objects.filter(recipe=instance).delete()
 		recipe_timepoints = validated_data.get('timepoints')
 		bulk_timepoints = []
