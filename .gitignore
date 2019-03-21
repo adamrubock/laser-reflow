@@ -265,3 +265,5 @@ typings/
 Pipfile.lock
 package-lock.json
 yarn\.lock
+
+laserline/**/migrations/
