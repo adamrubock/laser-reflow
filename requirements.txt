@@ -1,2 +1,4 @@
 django
 djangorestframework
+django-rq
+python-redis-lock

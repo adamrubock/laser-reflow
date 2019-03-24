@@ -44,6 +44,5 @@ class RecipeSerializer(serializers.ModelSerializer):
 		TimePoint.objects.bulk_create(bulk_timepoints)
 		return instance
 	
-	
 
 
