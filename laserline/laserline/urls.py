@@ -21,5 +21,5 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('django-rq/', include('django_rq.urls')),
     path('api/',include('api.urls')),
-    #path('run/',include('execute.urls')),
+    #path('ldm/',include('ldm.urls')),
 ]

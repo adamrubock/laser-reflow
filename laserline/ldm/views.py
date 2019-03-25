@@ -1,3 +1,4 @@
+'''
 from django.core.exceptions import ObjectDoesNotExist
 from rest_framework.views import APIView
 from rest_framework import status
@@ -9,6 +10,7 @@ import django_rq
 # imports from this project
 from api.models import Recipe, TimePoint
 from api.serializers import RecipeSerializer
+from daemon.runrecipe import run
 
 class SubmitRun(APIView):
 	def get(self, request):
@@ -33,17 +35,16 @@ class SubmitRun(APIView):
 			return Response({'errormsg': 'A run is already underway.'},status.HTTP_409_CONFLICT)
 		
 		timepoints = RecipeSerializer(Recipe.objects.get(recipe).data.get('timepoints'))
-		# implement the real McCoy
+		# TODO implement the real McCoy
 		# now run series of checks, use try/except blocks here:
 		# check shutter is open
 		# check threshold is on
 		# check interlocks closed
 		# check no error signal
 
-		django_rq.enqueue(operator.add,timepoints,lock)
+		django_rq.enqueue(run,timepoints,lock)
 		django_rq.get_worker().work(burst=True)
 		return Response(status=status.HTTP_202_ACCEPTED)
-
 
 class RunStatus(APIView):
 	def get(self,request):
@@ -54,3 +55,15 @@ class RunStatus(APIView):
 		else:
 			lock.release()
 			return Response({'running': False})
+
+class CancelRun(APIView):
+	def get(self,request):
+		r = StrictRedis(password='laserr3flow')
+		default_queue = django_rq.queues.get_queue(connection=r)
+		for j in django_rq.workers.Worker.all(connection=r,queue=default_queue):
+			j.kill_horse()
+		# TODO turn laser off here
+		lock = redis_lock.Lock(r,"execute_lock")
+		lock.reset()
+		return Response(data={'killed': True})
+'''

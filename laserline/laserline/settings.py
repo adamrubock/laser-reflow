@@ -38,9 +38,8 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
-    'django_rq',
     'api',
-    'execute',
+    'ldm',
 ]
 
 MIDDLEWARE = [
@@ -123,12 +122,3 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 
-RQ_QUEUES = {
-    'default': {
-        'HOST': 'localhost',
-        'PORT': 6379,
-        'DB': 0,
-        'PASSWORD': 'laserr3flow',
-        'DEFAULT_TIMEOUT': 360,
-    },
-}
