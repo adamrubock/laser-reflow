@@ -1,6 +1,7 @@
 django
 djangorestframework
 redis
-python-redis-lock
-
-python-daemon
+smbus
+pcf8574
+adafruit-circuitpython-mcp4725
+adafruit-circuitpython-tca9548a

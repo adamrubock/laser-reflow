@@ -1,5 +1,0 @@
-'''
-main mode
-	every 
-'''
-

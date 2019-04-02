@@ -23,7 +23,6 @@ class SubmitRun(APIView):
 			url_id = self.kwargs.get("url_id")
 		except Exception:
 			return Response({'errormsg': 'The request URL is not formed properly.'},status.HTTP_400_BAD_REQUEST)
-
 		try:
 			recipe = Recipe.objects.get(id=url_id)
 		except Exception:
@@ -35,7 +34,6 @@ class SubmitRun(APIView):
 			return Response({'errormsg': 'A run is already underway.'},status.HTTP_409_CONFLICT)
 		
 		timepoints = RecipeSerializer(Recipe.objects.get(recipe).data.get('timepoints'))
-		# TODO implement the real McCoy
 		# now run series of checks, use try/except blocks here:
 		# check shutter is open
 		# check threshold is on
@@ -56,14 +54,3 @@ class RunStatus(APIView):
 			lock.release()
 			return Response({'running': False})
 
-class CancelRun(APIView):
-	def get(self,request):
-		r = StrictRedis(password='laserr3flow')
-		default_queue = django_rq.queues.get_queue(connection=r)
-		for j in django_rq.workers.Worker.all(connection=r,queue=default_queue):
-			j.kill_horse()
-		# TODO turn laser off here
-		lock = redis_lock.Lock(r,"execute_lock")
-		lock.reset()
-		return Response(data={'killed': True})
-'''
