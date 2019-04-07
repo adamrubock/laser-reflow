@@ -13,6 +13,17 @@ from sys import exit
 
 class LaserlineIO(object):
     def __init__(self):
+        # constants
+        self.NUM_DIGITAL_INPUTS = 9
+        self.NUM_DIGITAL_OUTPUTS = 4
+        self.TEMP_ANALOG_IN_PARAMS = (0x68, 0x10)
+        self.CURRENT_ANALOG_IN_PARAMS = (0x68, 0x30)
+        self.POWER_ANALOG_IN_PARAMS = (0x68, 0x50)
+        self.HOUSING_TEMP_ANALOG_IN_PARAMS = (0x68, 0x70)
+        self.OPTIC_TEMP_ANALOG_IN_PARAMS = (0x6e, 0x10)
+        # TODO paramaterize addresses and error signal indices
+
+
         self.r = redis.Redis(password='laserr3flow', decode_responses=True)
         self.i2c_lock = threading.Lock()
         self.run_toggle = threading.Condition(self.i2c_lock)
@@ -78,9 +89,9 @@ class LaserlineIO(object):
         pipe = self.r.pipeline()
         pipe.hmset('analog_outputs', self.analog_outputs)
         pipe.hmset('analog_inputs', self.analog_inputs)
-        for i in range(9):
+        for i in range(self.NUM_DIGITAL_INPUTS):
             pipe.setbit('digital_inputs', i, 0)
-        for i in range(4):
+        for i in range(self.NUM_DIGITAL_OUTPUTS):
             pipe.setbit('digital_outputs', i, 1)
         pipe.delete('cancel_run', 'start_run', 'run_active')
         pipe.execute()
@@ -137,42 +148,42 @@ class LaserlineIO(object):
         retval = False
         # return nonzero if any of the error signals are high
         try:
-            self.bus.write_byte(0x68, 0x10)
+            self.bus.write_byte(*self.TEMP_ANALOG_IN_PARAMS)
             readback = int.from_bytes(
-                bytes(self.bus.read_i2c_block_data(0x68, 0x00, 2)), byteorder='big', signed=True)
+                bytes(self.bus.read_i2c_block_data(self.TEMP_ANALOG_IN_PARAMS[0], 0x00, 2)), byteorder='big', signed=True)
         except OSError:
             logging.error('unable to read ldm temperature', exc_info=False)
         self.analog_inputs.update({'ldm_temp_analog': readback})
 
         try:
-            self.bus.write_byte(0x68, 0x30)
-            readback = int.from_bytes(
-                bytes(self.bus.read_i2c_block_data(0x68, 0x00, 2)), byteorder='big', signed=True)
+            self.bus.write_byte
+            readback = int.from_bytes(*self.CURRENT_ANALOG_IN_PARAMS)
+                bytes(self.bus.read_i2c_block_data(self.CURRENT_ANALOG_IN_PARAMS[0], 0x00, 2)), byteorder='big', signed=True)
         except OSError:
             logging.error('unable to read ldm current', exc_info=False)
         self.analog_inputs.update({'ldm_current_analog': readback})
 
         try:
-            self.bus.write_byte(0x68, 0x50)
+            self.bus.write_byte(*self.POWER_ANALOG_IN_PARAMS)
             readback = int.from_bytes(
-                bytes(self.bus.read_i2c_block_data(0x68, 0x00, 2)), byteorder='big', signed=True)
+                bytes(self.bus.read_i2c_block_data(self.POWER_ANALOG_IN_PARAMS[0], 0x00, 2)), byteorder='big', signed=True)
         except OSError:
             logging.error('unable to read ldm power', exc_info=False)
         self.analog_inputs.update({'ldm_power_analog': readback})
 
         try:
-            self.bus.write_byte(0x68, 0x70)
+            self.bus.write_byte(*self.HOUSING_TEMP_ANALOG_IN_PARAMS)
             readback = int.from_bytes(
-                bytes(self.bus.read_i2c_block_data(0x68, 0x00, 2)), byteorder='big', signed=True)
+                bytes(self.bus.read_i2c_block_data(self.HOUSING_TEMP_ANALOG_IN_PARAMS[0], 0x00, 2)), byteorder='big', signed=True)
         except OSError:
             logging.error(
                 'unable to read optic housing temperature', exc_info=False)
         self.analog_inputs.update({'optic_housing_temp_analog': readback})
 
         try:
-            self.bus.write_byte(0x6e, 0x10)
+            self.bus.write_byte(*self.OPTIC_TEMP_ANALOG_IN_PARAMS)
             readback = int.from_bytes(
-                bytes(self.bus.read_i2c_block_data(0x68, 0x00, 2)), byteorder='big', signed=True)
+                bytes(self.bus.read_i2c_block_data(self.OPTIC_TEMP_ANALOG_IN_PARAMS[0], 0x00, 2)), byteorder='big', signed=True)
         except OSError:
             logging.error(
                 'unable to read optic unit temperature', exc_info=False)
@@ -183,7 +194,7 @@ class LaserlineIO(object):
         try:
             self.digital_inputs = self.digital_in_2.port + self.digital_in_1.port
             pipe = self.r.pipeline()
-            for i in range(9):
+            for i in range(self.NUM_DIGITAL_INPUTS):
                 pipe.setbit('digital_inputs', i, self.digital_inputs[i])
             pipe.execute()
             if self.digital_inputs[2] or self.digital_inputs[3]:  # errors
@@ -204,7 +215,7 @@ class LaserlineIO(object):
         try:
             output_list = [True]  # laser power off
             output_list.extend(
-                [bool(self.r.getbit('digital_outputs', i)) for i in range(4)])
+                [bool(self.r.getbit('digital_outputs', i)) for i in range(self.NUM_DIGITAL_OUTPUTS)])
             output_list.extend([True]*3)
             self.digital_out.port = output_list
         except OSError:
