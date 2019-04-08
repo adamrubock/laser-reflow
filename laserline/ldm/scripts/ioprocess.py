@@ -62,7 +62,6 @@ class LaserlineIO(object):
         self.analog_outputs = {
             'x_dim_analog': 0.0,
             'y_dim_analog': 0.0,
-            'temperature_preset_analog': 0.0,
         }
 
         self.digital_inputs = []
