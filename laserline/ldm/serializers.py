@@ -1,7 +1,5 @@
 from api.models import Recipe
 from rest_framework import serializers
-from .models import Laserline
-
 
 class LaserlineWriteSerializer(serializers.Serializer):
     recipe = serializers.PrimaryKeyRelatedField(queryset=Recipe.objects.all())

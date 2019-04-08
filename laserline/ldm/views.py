@@ -20,19 +20,19 @@ class LaserlineInterface(APIView):
             # digital outputs are negations of the values we set them to.
             # web interface shouldn't have to deal with this counterintuitive nature
             pipe.setbit('digital_outputs', 0,
-                        not serializer.data.get('threshold_digital'))
+                        not serializer.validated_data.get('threshold_digital'))
             pipe.setbit('digital_outputs', 1,
-                        not serializer.data.get('shutter_digital'))
+                        not serializer.validated_data.get('shutter_digital'))
             pipe.setbit('digital_outputs', 2,
-                        not serializer.data.get('alignment_laser_digital'))
+                        not serializer.validated_data.get('alignment_laser_digital'))
             pipe.setbit('digital_outputs', 3,
                         not serializer.data.get('reset_error_digital'))
-            pipe.set('x_dim_analog', serializer.data.get('x_width'))
-            pipe.set('y_dim_analog', serializer.data.get('y_width'))
+            pipe.set('x_dim_analog', serializer.validated_data.get('x_width'))
+            pipe.set('y_dim_analog', serializer.validated_data.get('y_width'))
             pipe.execute()
 
             running = r.exists('run_active')
-            run_request = serializer.data.get('run_request')
+            run_request = serializer.validated_data.get('run_request')
             if run_request == 'DO_NOTHING':
                 return Response(serializer.data, status=status.HTTP_202_ACCEPTED)
             else if run_request == 'START':
@@ -47,12 +47,12 @@ class LaserlineInterface(APIView):
                                    or not r.getbit('digital_inputs', 6))
                     if ok_to_start:
                         r.delete('durations', 'levels')
-                        rs = RecipeSerializer(serializer.data.get('recipe'))
+                        rs = RecipeSerializer(serializer.validated_data.get('recipe'))
                         timepoints = rs.data.get('timepoints')
-                        r.lpush('durations', [
-                                i.get('timepoint_duration') for i in timepoints])
-                        r.lpush('levels', [i.get('power_level')
-                                           for i in timepoints])
+                        r.lpush('durations', *(
+                                i.get('timepoint_duration') for i in timepoints)
+                        r.lpush('levels', *(i.get('power_level')
+                                           for i in timepoints)
                         r.set('x_axis', rs.data.get('x_width'))
                         r.set('y_axis', rs.data.get('y_width'))
                         r.set('start_run', '')

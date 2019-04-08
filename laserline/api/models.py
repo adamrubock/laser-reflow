@@ -10,6 +10,6 @@ class Recipe(models.Model):
 		return self.recipe_name
 
 class TimePoint(models.Model):
-	timepoint_duration = models.IntegerField(validators=[MinValueValidator(1),MaxValueValidator(10000000)])
+	timepoint_duration = models.IntegerField(validators=[MinValueValidator(1),MaxValueValidator(600000)])
 	power_level = models.FloatField(validators=[MinValueValidator(0.0),MaxValueValidator(1.0)])
 	recipe = models.ForeignKey(Recipe,on_delete=models.CASCADE,related_name='timepoints')
