@@ -9,6 +9,7 @@ from api.models import Recipe, TimePoint
 from api.serializers import RecipeSerializer
 from .serializers import LaserlineWriteSerializer
 
+
 @api_view(['POST'])
 def control(self, request):
     serializer = LaserlineWriteSerializer(data=request.data, partial=True)
@@ -25,27 +26,28 @@ def control(self, request):
                     not serializer.validated_data.get('alignment_laser_digital'))
         pipe.setbit('digital_outputs', 3,
                     not serializer.data.get('reset_error_digital'))
-        pipe.set('x_dim_analog', serializer.validated_data.get('x_width'))
-        pipe.set('y_dim_analog', serializer.validated_data.get('y_width'))
+        pipe.hmset('analog_outputs', {
+            'x_dim_analog': serializer.validated_data.get('x_width'),
+            'y_dim_analog': serializer.validated_data.get('y_width')})
         pipe.execute()
 
-        running = r.exists('run_active')
-        run_request = serializer.validated_data.get('run_request')
+        running=r.exists('run_active')
+        run_request=serializer.validated_data.get('run_request')
         if run_request == 'DO_NOTHING':
-            return Response(serializer.data, status=status.HTTP_202_ACCEPTED)
+            return Response(serializer.data, status = status.HTTP_202_ACCEPTED)
         elif run_request == 'START':
             if running:
-                return Response(serializer.data, status=status.HTTP_409_CONFLICT)
+                return Response(serializer.data, status = status.HTTP_409_CONFLICT)
             else:
                 # TODO make sure these are correct position and polarity
-                ok_to_start = (r.getbit('digital_inputs', 2)
+                ok_to_start=(r.getbit('digital_inputs', 2)
                                or r.getbit('digital_inputs', 3)
                                or not r.getbit('digital_inputs', 4)
                                or not r.getbit('digital_inputs', 5)
                                or not r.getbit('digital_inputs', 6))
                 if ok_to_start:
                     r.delete('durations', 'levels')
-                    rs = RecipeSerializer(
+                    rs=RecipeSerializer(
                         serializer.validated_data.get('recipe'))
                     timepoints = rs.data.get('timepoints')
                     r.lpush('durations', *(
@@ -66,6 +68,27 @@ def control(self, request):
                 return Response(serializer.data, status=status.HTTP_400_BAD_REQUEST)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+digital_input_names = (
+    'sleep_mode_digital',
+    'warning_digital',
+    'cable_error_digital',
+    'collective_error_digital',
+    'safety_circuit_digital',
+    'shutter_open_digital',
+    'threshold_digital',
+    'laser_on_digital',
+    'shutter_closed_digital',
+)
+
 @api_view(['GET'])
 def info(self, request):
-    pass
+    r = Redis(password='laserr3flow')
+    response = {name: float(val) for name, val in r.hgetall('analog_inputs').items()}
+    # now the digital inputs
+    # TODO parameterize
+    response.update(dict(zip(digital_input_names,
+        (r.getbit('digital_inputs',i) for i in range(9)))))
+    response.update({'run_active': r.exists('run_active')})
+    return Response(response,status=status.HTTP_200_OK)
+
+    
