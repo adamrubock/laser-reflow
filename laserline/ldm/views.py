@@ -40,11 +40,12 @@ def control(self, request):
                 return Response(serializer.data, status = status.HTTP_409_CONFLICT)
             else:
                 # TODO make sure these are correct position and polarity
-                ok_to_start=(r.getbit('digital_inputs', 2)
-                               or r.getbit('digital_inputs', 3)
-                               or not r.getbit('digital_inputs', 4)
-                               or not r.getbit('digital_inputs', 5)
-                               or not r.getbit('digital_inputs', 6))
+                ok_to_start=True
+                            # (r.getbit('digital_inputs', 2)
+                            #    or r.getbit('digital_inputs', 3)
+                            #    or not r.getbit('digital_inputs', 4)
+                            #    or not r.getbit('digital_inputs', 5)
+                            #    or not r.getbit('digital_inputs', 6))
                 if ok_to_start:
                     r.delete('durations', 'levels')
                     rs=RecipeSerializer(
@@ -83,11 +84,11 @@ digital_input_names = (
 @api_view(['GET'])
 def info(self, request):
     r = Redis(password='laserr3flow')
-    response = {name: float(val) for name, val in r.hgetall('analog_inputs').items()}
+    response ={}# {name: float(val) for name, val in r.hgetall('analog_inputs').items()}
     # now the digital inputs
     # TODO parameterize
-    response.update(dict(zip(digital_input_names,
-        (r.getbit('digital_inputs',i) for i in range(9)))))
+    #response.update(dict(zip(digital_input_names,
+     #   (r.getbit('digital_inputs',i) for i in range(9)))))
     response.update({'run_active': r.exists('run_active')})
     return Response(response,status=status.HTTP_200_OK)
 
