@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 import redis
 from time import sleep
 import threading
@@ -14,6 +15,7 @@ from datetime import datetime, timedelta
 
 class LaserlineIO(object):
     def __init__(self):
+        logging.basicConfig(filename='ioprocess.log',level=logging.DEBUG)
         # constants
         self.NUM_DIGITAL_INPUTS = 9
         self.NUM_DIGITAL_OUTPUTS = 4
@@ -124,8 +126,9 @@ class LaserlineIO(object):
                 if self.run_toggle.wait():  # using "if" as a spurious wakeup defense mechanism
                     self.run_active.set()
                     self.r.set('run_active', '')
-                    self.x_dac.normalized_value = float(r.get('x_axis'))
-                    self.y_dac.normalized_value = float(r.get('y_axis'))
+                    logging.info('x '+self.r.get('x_axis')+' y '+self.r.get('y_axis'))
+                    # self.x_dac.normalized_value = float(self.r.get('x_axis'))
+                    # self.y_dac.normalized_value = float(self.r.get('y_axis'))
                     durations = [float(duration)
                                  for duration in self.r.lrange('durations', 0, -1)]
                     levels = [float(duration)
@@ -144,7 +147,7 @@ class LaserlineIO(object):
                         except OSError:
                             logging.error(
                                 'unable to write power level', exc_info=False)
-                        if self.run_toggle.wait(timeout=duration):  # cancel
+                        if self.run_toggle.wait(timeout=duration/1000):  # cancel
                             break
                     # self.power_dac.normalized_value = 0
                     # self.digital_out.set_output(0, True)  # off
@@ -226,7 +229,8 @@ class LaserlineIO(object):
             output_list.extend(
                 [bool(self.r.getbit('digital_outputs', i)) for i in range(self.NUM_DIGITAL_OUTPUTS)])
             output_list.extend([True]*3)
-            logging.info(outputs: 'str(output_list)')
+            logging.info('outputs at '+str(datetime.now())+': ')
+            logging.info(str(output_list))
             # self.digital_out.port = output_list
         except OSError:
             logging.error(
