@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 import redis
 from time import sleep
 import threading
@@ -9,10 +10,12 @@ import adafruit_mcp4725
 import adafruit_tca9548a
 import logging
 from sys import exit
+from datetime import datetime, timedelta
 
 
 class LaserlineIO(object):
     def __init__(self):
+        logging.basicConfig(filename='ioprocess.log',level=logging.DEBUG)
         # constants
         self.NUM_DIGITAL_INPUTS = 9
         self.NUM_DIGITAL_OUTPUTS = 4
@@ -115,7 +118,7 @@ class LaserlineIO(object):
                     if self.r.delete('start_run'):  # delete returns 1 if key existed
                         # checks are done in Django before setting start_run
                         self.run_toggle.notify()
-                toggle_happened = self.run_toggle.wait(timeout=0.1)
+                toggle_happened = self.run_toggle.wait(timeout=2)
 
     def recipe_run(self):
         while True:
@@ -123,23 +126,32 @@ class LaserlineIO(object):
                 if self.run_toggle.wait():  # using "if" as a spurious wakeup defense mechanism
                     self.run_active.set()
                     self.r.set('run_active', '')
-                    self.x_dac.normalized_value = float(r.get('x_axis'))
-                    self.y_dac.normalized_value = float(r.get('y_axis'))
+                    logging.info('x '+self.r.get('x_axis')+' y '+self.r.get('y_axis'))
+                    self.x_dac.normalized_value = float(self.r.get('x_axis'))
+                    self.y_dac.normalized_value = float(self.r.get('y_axis'))
                     durations = [float(duration)
                                  for duration in self.r.lrange('durations', 0, -1)]
                     levels = [float(duration)
                               for duration in self.r.lrange('levels', 0, -1)]
                     self.digital_out.set_output(0, False)  # on!
+                    logging.info('laser on!')
+                    prevtime = datetime.now()
                     for duration, level in zip(durations, levels):
                         try:
                             self.power_dac.normalized_value = level
+                            currtime = datetime.now()
+                            logging.info('actually waited milliseconds: ' + str((currtime-prevtime)/timedelta(milliseconds=1)))
+                            prevtime = currtime
+                            logging.info('power set to: '+str(level))
+                            logging.info('planning to wait ms:'+str(duration))
                         except OSError:
                             logging.error(
                                 'unable to write power level', exc_info=False)
-                        if self.run_toggle.wait(timeout=duration):  # cancel
+                        if self.run_toggle.wait(timeout=duration/1000):  # cancel
                             break
                     self.power_dac.normalized_value = 0
                     self.digital_out.set_output(0, True)  # off
+                    logging.info('laser off!')
                     self.r.delete('run_active')
                     self.run_active.clear()
 
@@ -216,6 +228,8 @@ class LaserlineIO(object):
             output_list.extend(
                 [bool(self.r.getbit('digital_outputs', i)) for i in range(self.NUM_DIGITAL_OUTPUTS)])
             output_list.extend([True]*3)
+            logging.info('outputs at '+str(datetime.now())+': ')
+            logging.info(str(output_list))
             self.digital_out.port = output_list
         except OSError:
             logging.error(
@@ -225,6 +239,11 @@ class LaserlineIO(object):
                 'x_dim_analog')
             self.y_dac.normalized_value = self.analog_outputs.get(
                 'y_dim_analog')
+                
+            logging.info(str(self.analog_outputs.get(
+                'x_dim_analog')))
+            logging.info(str(self.analog_outputs.get(
+                'y_dim_analog')))
         except OSError:
             logging.error(
                 'unable to change analog outputs', exc_info=False)
