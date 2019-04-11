@@ -52,9 +52,9 @@ def control(request):
                 return Response(serializer.data, status = status.HTTP_202_ACCEPTED)
             elif run_request == 'START':
                 if serializer.validated_data.get('recipe') is None:
-                    return Response(serializer.data,status=status.HTTP_400_BAD_REQUEST)
+                    return Response({'error': 'no recipe'},status=status.HTTP_400_BAD_REQUEST)
                 if running:
-                    return Response(serializer.data, status = status.HTTP_409_CONFLICT)
+                    return Response({'error': 'already running'}, status = status.HTTP_409_CONFLICT)
                 else:
                     # TODO make sure these are correct position and polarity
                     ok_to_start=True
@@ -76,15 +76,16 @@ def control(request):
                         r.set('y_axis', rs.data.get('y_width'))
                         r.set('start_run', '')
                     else:
-                        return Response(serializer.data, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+                        return Response({'error': 'cannot start'}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
             else:
                 # run_request must be 'CANCEL'
                 if running:
                     r.set('cancel_run', '')
                     return Response(serializer.data, status=status.HTTP_200_OK)
                 else:
-                    return Response(serializer.data, status=status.HTTP_400_BAD_REQUEST)
-    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+                    return Response({'error': 'not running'}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(serializer.data, status = status.HTTP_200_OK)
+    return Response({'error': serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
 
 digital_input_names = (
     'sleep_mode_digital',
