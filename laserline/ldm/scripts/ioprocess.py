@@ -15,7 +15,7 @@ from datetime import datetime, timedelta
 
 class LaserlineIO(object):
     def __init__(self):
-        logging.basicConfig(filename='ioprocess.log',level=logging.DEBUG)
+        logging.basicConfig(filename='ioprocess.log', level=logging.DEBUG)
         # constants
         self.NUM_DIGITAL_INPUTS = 9
         self.NUM_DIGITAL_OUTPUTS = 4
@@ -25,7 +25,6 @@ class LaserlineIO(object):
         self.HOUSING_TEMP_ANALOG_IN_PARAMS = (0x68, 0x70)
         self.OPTIC_TEMP_ANALOG_IN_PARAMS = (0x6e, 0x10)
         # TODO paramaterize addresses and error signal indices
-
 
         self.r = redis.Redis(password='laserr3flow', decode_responses=True)
         self.i2c_lock = threading.Lock()
@@ -126,7 +125,8 @@ class LaserlineIO(object):
                 if self.run_toggle.wait():  # using "if" as a spurious wakeup defense mechanism
                     self.run_active.set()
                     self.r.set('run_active', '')
-                    logging.info('x '+self.r.get('x_axis')+' y '+self.r.get('y_axis'))
+                    logging.info('x '+self.r.get('x_axis') +
+                                 ' y '+self.r.get('y_axis'))
                     self.x_dac.normalized_value = float(self.r.get('x_axis'))
                     self.y_dac.normalized_value = float(self.r.get('y_axis'))
                     durations = [float(duration)
@@ -140,7 +140,8 @@ class LaserlineIO(object):
                         try:
                             self.power_dac.normalized_value = level
                             currtime = datetime.now()
-                            logging.info('actually waited milliseconds: ' + str((currtime-prevtime)/timedelta(milliseconds=1)))
+                            logging.info('actually waited milliseconds: ' +
+                                         str((currtime-prevtime)/timedelta(milliseconds=1)))
                             prevtime = currtime
                             logging.info('power set to: '+str(level))
                             logging.info('planning to wait ms:'+str(duration))
@@ -169,87 +170,87 @@ class LaserlineIO(object):
         try:
             self.bus.write_byte
             readback = int.from_bytes(*self.CURRENT_ANALOG_IN_PARAMS)
-                bytes(self.bus.read_i2c_block_data(self.CURRENT_ANALOG_IN_PARAMS[0], 0x00, 2)), byteorder='big', signed=True)
+                bytes(self.bus.read_i2c_block_data(self.CURRENT_ANALOG_IN_PARAMS[0], 0x00, 2)), byteorder = 'big', signed = True)
         except OSError:
-            logging.error('unable to read ldm current', exc_info=False)
+            logging.error('unable to read ldm current', exc_info = False)
         self.analog_inputs.update({'ldm_current_analog': readback})
 
         try:
             self.bus.write_byte(*self.POWER_ANALOG_IN_PARAMS)
-            readback = int.from_bytes(
-                bytes(self.bus.read_i2c_block_data(self.POWER_ANALOG_IN_PARAMS[0], 0x00, 2)), byteorder='big', signed=True)
+            readback=int.from_bytes(
+                bytes(self.bus.read_i2c_block_data(self.POWER_ANALOG_IN_PARAMS[0], 0x00, 2)), byteorder = 'big', signed = True)
         except OSError:
-            logging.error('unable to read ldm power', exc_info=False)
+            logging.error('unable to read ldm power', exc_info = False)
         self.analog_inputs.update({'ldm_power_analog': readback})
 
         try:
             self.bus.write_byte(*self.HOUSING_TEMP_ANALOG_IN_PARAMS)
-            readback = int.from_bytes(
-                bytes(self.bus.read_i2c_block_data(self.HOUSING_TEMP_ANALOG_IN_PARAMS[0], 0x00, 2)), byteorder='big', signed=True)
+            readback=int.from_bytes(
+                bytes(self.bus.read_i2c_block_data(self.HOUSING_TEMP_ANALOG_IN_PARAMS[0], 0x00, 2)), byteorder = 'big', signed = True)
         except OSError:
             logging.error(
-                'unable to read optic housing temperature', exc_info=False)
+                'unable to read optic housing temperature', exc_info = False)
         self.analog_inputs.update({'optic_housing_temp_analog': readback})
 
         try:
             self.bus.write_byte(*self.OPTIC_TEMP_ANALOG_IN_PARAMS)
-            readback = int.from_bytes(
-                bytes(self.bus.read_i2c_block_data(self.OPTIC_TEMP_ANALOG_IN_PARAMS[0], 0x00, 2)), byteorder='big', signed=True)
+            readback=int.from_bytes(
+                bytes(self.bus.read_i2c_block_data(self.OPTIC_TEMP_ANALOG_IN_PARAMS[0], 0x00, 2)), byteorder = 'big', signed = True)
         except OSError:
             logging.error(
-                'unable to read optic unit temperature', exc_info=False)
+                'unable to read optic unit temperature', exc_info = False)
         self.analog_inputs.update({'optic_unit_temp_analog': readback})
 
         self.r.hmset('analog_inputs', self.analog_inputs)
 
         try:
-            self.digital_inputs = self.digital_in_2.port + self.digital_in_1.port
-            pipe = self.r.pipeline()
+            self.digital_inputs=self.digital_in_2.port + self.digital_in_1.port
+            pipe=self.r.pipeline()
             for i in range(self.NUM_DIGITAL_INPUTS):
                 pipe.setbit('digital_inputs', i, self.digital_inputs[i])
             pipe.execute()
             if self.digital_inputs[2] or self.digital_inputs[3]:  # errors
-                retval = True
+                retval=True
         except OSError:
             logging.error(
-                'unable to read digital input', exc_info=False)
-            retval = True
+                'unable to read digital input', exc_info = False)
+            retval=True
         return retval
 
     def update_outputs(self):
         try:
-            self.power_dac.normalized_value = 0
+            self.power_dac.normalized_value=0
         except OSError:
             logging.critical(
-                'unable to zero power', exc_info=False)
+                'unable to zero power', exc_info = False)
 
         try:
-            output_list = [True]  # laser power off
+            output_list=[True]  # laser power off
             output_list.extend(
                 [bool(self.r.getbit('digital_outputs', i)) for i in range(self.NUM_DIGITAL_OUTPUTS)])
             output_list.extend([True]*3)
             logging.info('outputs at '+str(datetime.now())+': ')
             logging.info(str(output_list))
-            self.digital_out.port = output_list
+            self.digital_out.port=output_list
         except OSError:
             logging.error(
-                'unable to change digital outputs', exc_info=False)
+                'unable to change digital outputs', exc_info = False)
         try:
-            self.x_dac.normalized_value = self.analog_outputs.get(
+            self.x_dac.normalized_value=self.analog_outputs.get(
                 'x_dim_analog')
-            self.y_dac.normalized_value = self.analog_outputs.get(
+            self.y_dac.normalized_value=self.analog_outputs.get(
                 'y_dim_analog')
-                
+
             logging.info(str(self.analog_outputs.get(
                 'x_dim_analog')))
             logging.info(str(self.analog_outputs.get(
                 'y_dim_analog')))
         except OSError:
             logging.error(
-                'unable to change analog outputs', exc_info=False)
+                'unable to change analog outputs', exc_info = False)
         return
 
 
 if __name__ == "__main__":
-    io = LaserlineIO()
+    io=LaserlineIO()
     io.main()
