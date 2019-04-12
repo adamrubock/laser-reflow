@@ -168,8 +168,8 @@ class LaserlineIO(object):
         self.analog_inputs.update({'ldm_temp_analog': readback})
 
         try:
-            self.bus.write_byte
-            readback = int.from_bytes(*self.CURRENT_ANALOG_IN_PARAMS)
+            self.bus.write_byte(*self.CURRENT_ANALOG_IN_PARAMS)
+            readback = int.from_bytes(
                 bytes(self.bus.read_i2c_block_data(self.CURRENT_ANALOG_IN_PARAMS[0], 0x00, 2)), byteorder = 'big', signed = True)
         except OSError:
             logging.error('unable to read ldm current', exc_info = False)
