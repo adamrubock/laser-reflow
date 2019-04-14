@@ -1,8 +1,9 @@
 from api.models import Recipe
 from rest_framework import serializers
 
+
 class LaserlineWriteSerializer(serializers.Serializer):
-    recipe = serializers.PrimaryKeyRelatedField(queryset=Recipe.objects.all(),required=False)
+    recipe = serializers.PrimaryKeyRelatedField(queryset=Recipe.objects.all(), required=False)
 
     RUN_REQUEST_CHOICES = (
         ('DO_NOTHING', 'Do Nothing'),
